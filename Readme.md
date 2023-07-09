@@ -19,3 +19,7 @@ I am working on API from scratch that is similar to Open Movie Database API
 
 MarshalIndent to improve readability, but it is more expensie that Marshal.
 Keep it mind if needed.
+
+### DB migrations
+using migrate do it in CLI
+golang\migrate to run db migrations at startup
