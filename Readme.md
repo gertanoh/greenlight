@@ -23,3 +23,7 @@ Keep it mind if needed.
 ### DB migrations
 using migrate do it in CLI
 golang\migrate to run db migrations at startup
+
+### Rate limiting
+Chosen algo : token bucket
+with burst of b and on average r requests per s

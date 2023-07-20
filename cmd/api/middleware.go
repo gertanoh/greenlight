@@ -2,7 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"sync"
+	"time"
+
+	"golang.org/x/time/rate"
 )
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
@@ -26,6 +31,64 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 				app.serverErrorResponse(w, r, fmt.Errorf("%s", err))
 			}
 		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) rateLimit(next http.Handler) http.Handler {
+
+	type client struct {
+		limiter  *rate.Limiter
+		lastSeen time.Time
+	}
+
+	// concurrent map for storing clients and their rate limiter
+	var clients sync.Map
+
+	// go routine to reduce map size in runtime
+	go func() {
+		for {
+			time.Sleep(time.Minute)
+			// remove old clients from map
+			clients.Range(func(key, value interface{}) bool {
+				ip := key.(string)
+				client := value.(*client)
+				if time.Since(client.lastSeen) > 3*time.Minute {
+					clients.Delete(ip)
+				}
+				return true
+			})
+		}
+	}()
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		_, ok := clients.Load(ip)
+		if !ok {
+			limiter := rate.NewLimiter(2, 4)
+			clients.Store(ip, &client{limiter: limiter, lastSeen: time.Now()})
+		}
+
+		value, ok := clients.Load(ip)
+		if !ok {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		existingClient := value.(*client)
+		existingClient.lastSeen = time.Now()
+
+		if !existingClient.limiter.Allow() {
+			app.rateLimitExceededResponse(w, r)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
