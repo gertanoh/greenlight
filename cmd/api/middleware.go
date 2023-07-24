@@ -2,13 +2,16 @@ package main
 
 import (
 	"errors"
+	"expvar"
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/felixge/httpsnoop"
 	"github.com/henrtytanoh/greenlight/internal/data"
 	"github.com/henrtytanoh/greenlight/internal/validator"
 	"golang.org/x/time/rate"
@@ -67,32 +70,33 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		ip, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			app.serverErrorResponse(w, r, err)
-			return
+		if app.config.limiter.enabled {
+			ip, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				app.serverErrorResponse(w, r, err)
+				return
+			}
+
+			_, ok := clients.Load(ip)
+			if !ok {
+				limiter := rate.NewLimiter(rate.Limit(app.config.limiter.rps), app.config.limiter.burst)
+				clients.Store(ip, &client{limiter: limiter, lastSeen: time.Now()})
+			}
+
+			value, ok := clients.Load(ip)
+			if !ok {
+				app.serverErrorResponse(w, r, err)
+				return
+			}
+
+			existingClient := value.(*client)
+			existingClient.lastSeen = time.Now()
+
+			if !existingClient.limiter.Allow() {
+				app.rateLimitExceededResponse(w, r)
+				return
+			}
 		}
-
-		_, ok := clients.Load(ip)
-		if !ok {
-			limiter := rate.NewLimiter(2, 4)
-			clients.Store(ip, &client{limiter: limiter, lastSeen: time.Now()})
-		}
-
-		value, ok := clients.Load(ip)
-		if !ok {
-			app.serverErrorResponse(w, r, err)
-			return
-		}
-
-		existingClient := value.(*client)
-		existingClient.lastSeen = time.Now()
-
-		if !existingClient.limiter.Allow() {
-			app.rateLimitExceededResponse(w, r)
-			return
-		}
-
 		next.ServeHTTP(w, r)
 	})
 }
@@ -212,5 +216,22 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 			}
 		}
 		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) metrics(next http.Handler) http.Handler {
+	totalRequestsReceived := expvar.NewInt("total_requests_received")
+	toalResponseSent := expvar.NewInt("total_response_sent")
+	totalProcessingTimeMicroseconds := expvar.NewInt("total_processing_time_microseconds")
+	totalResponsesSentByStatus := expvar.NewMap("total_responses_sent_by_status")
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		totalRequestsReceived.Add(1)
+		metrics := httpsnoop.CaptureMetrics(next, w, r)
+
+		toalResponseSent.Add(1)
+
+		totalProcessingTimeMicroseconds.Add(metrics.Duration.Microseconds())
+		totalResponsesSentByStatus.Add(strconv.Itoa(metrics.Code), 1)
 	})
 }
