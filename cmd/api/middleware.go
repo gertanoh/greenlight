@@ -4,7 +4,6 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/felixge/httpsnoop"
 	"github.com/henrtytanoh/greenlight/internal/data"
 	"github.com/henrtytanoh/greenlight/internal/validator"
+	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 )
 
@@ -71,11 +71,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		if app.config.limiter.enabled {
-			ip, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				app.serverErrorResponse(w, r, err)
-				return
-			}
+			ip := realip.FromRequest(r)
 
 			_, ok := clients.Load(ip)
 			if !ok {
@@ -83,12 +79,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 				clients.Store(ip, &client{limiter: limiter, lastSeen: time.Now()})
 			}
 
-			value, ok := clients.Load(ip)
-			if !ok {
-				app.serverErrorResponse(w, r, err)
-				return
-			}
-
+			value, _ := clients.Load(ip)
 			existingClient := value.(*client)
 			existingClient.lastSeen = time.Now()
 

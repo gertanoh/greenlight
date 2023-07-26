@@ -27,3 +27,11 @@ golang\migrate to run db migrations at startup
 ### Rate limiting
 Chosen algo : token bucket
 with burst of b and on average r requests per s
+
+### Dependencies
+Go uses module proxies to ensure package longevity.
+Package are located at  https://proxy.golang.org.
+If needed(firewall issue, own module mirror), one can change env GOPROXY to add the needed proxy.
+Go proxy does not guarantee that the sources will be present forever(unlikely, but possible)
+An alternative is to use vendor to keep all the sources of in a vendor folder.
+It can be useful for long standing applications.

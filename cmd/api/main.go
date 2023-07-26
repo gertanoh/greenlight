@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"expvar"
 	"flag"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -16,8 +17,6 @@ import (
 	"github.com/henrtytanoh/greenlight/internal/mailer"
 	_ "github.com/lib/pq"
 )
-
-const version = "1.0.0"
 
 type config struct {
 	port int
@@ -56,6 +55,11 @@ type application struct {
 	wg     sync.WaitGroup
 }
 
+var (
+	buildTime string
+	version   string
+)
+
 func main() {
 
 	var cfg config
@@ -81,7 +85,15 @@ func main() {
 		cfg.cors.trustedOrigins = strings.Fields(val)
 		return nil
 	})
+
+	displayVersion := flag.Bool("version", false, "Display version and exit")
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		fmt.Printf("Build time:\t%s\n", buildTime)
+		os.Exit(0)
+	}
 
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
