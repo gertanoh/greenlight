@@ -1,5 +1,3 @@
-## include variables
-include .envrc
 
 ################### Helpers ######################
 
@@ -67,5 +65,15 @@ linker_flags = '-s -X main.buildTime=${current_time}  -X main.version=${git_desc
 .PHONY: build/api
 build/api:
 	@echo 'Building cmd/api'
-	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
-	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/api ./cmd/api
+	go build -ldflags=${linker_flags} -o=./app ./cmd/api
+
+################### Docker ######################
+.PHONY: docker/build
+docker/build:
+	@echo 'Building Docker image for cmd/api'
+	docker build -t greenlight-app -f Dockerfile .
+
+.PHONY: docker/compose
+docker/compose/up:
+	@echo 'Docker compose to run cmd/api'
+	docker compose up
