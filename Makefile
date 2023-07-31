@@ -73,7 +73,10 @@ docker/build:
 	@echo 'Building Docker image for cmd/api'
 	docker build -t greenlight-app -f Dockerfile .
 
-.PHONY: docker/compose
+.PHONY: docker/compose/up
 docker/compose/up:
-	@echo 'Docker compose to run cmd/api'
 	docker compose up
+
+.PHONY: docker/compose/down
+docker/compose/down:
+	docker compose down

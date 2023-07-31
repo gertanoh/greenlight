@@ -11,11 +11,6 @@ RUN apk add --no-cache make  # Install 'make' (if not already available in the b
 RUN make build/api
 
 
-# Stage 2: Create the final Docker image
-FROM alpine:latest
-# Set the working directory inside the container
-WORKDIR /app
-
 # Copy the binary from the builder stage to the final stage
 FROM scratch
 COPY --from=build /app/app .
