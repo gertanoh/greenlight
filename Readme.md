@@ -35,3 +35,8 @@ If needed(firewall issue, own module mirror), one can change env GOPROXY to add 
 Go proxy does not guarantee that the sources will be present forever(unlikely, but possible)
 An alternative is to use vendor to keep all the sources of in a vendor folder.
 It can be useful for long standing applications.
+Metrics are handled with prometheus and vizualisation is done with grafana
+
+### TODO
+- [ ] Handle failing email sends due x509 certificate in docker
+- [ ] Load Testing
