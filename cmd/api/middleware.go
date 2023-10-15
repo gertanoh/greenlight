@@ -2,10 +2,8 @@ package main
 
 import (
 	"errors"
-	"expvar"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -211,18 +209,12 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 }
 
 func (app *application) metrics(next http.Handler) http.Handler {
-	totalRequestsReceived := expvar.NewInt("total_requests_received")
-	toalResponseSent := expvar.NewInt("total_response_sent")
-	totalProcessingTimeMicroseconds := expvar.NewInt("total_processing_time_microseconds")
-	totalResponsesSentByStatus := expvar.NewMap("total_responses_sent_by_status")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		totalRequestsReceived.Add(1)
+		app.m.totalRequestReceived.Inc()
 		metrics := httpsnoop.CaptureMetrics(next, w, r)
 
-		toalResponseSent.Add(1)
-
-		totalProcessingTimeMicroseconds.Add(metrics.Duration.Microseconds())
-		totalResponsesSentByStatus.Add(strconv.Itoa(metrics.Code), 1)
+		app.m.totalResponsesSent.Inc()
+		app.m.requestDuration.Set(metrics.Duration.Seconds())
 	})
 }

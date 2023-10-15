@@ -3,11 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
-	"expvar"
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +14,7 @@ import (
 	jsonlog "github.com/henrtytanoh/greenlight/internal/jsonLog"
 	"github.com/henrtytanoh/greenlight/internal/mailer"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type config struct {
@@ -47,12 +46,19 @@ type config struct {
 	}
 }
 
+// prometheus metrics config
+type metrics struct {
+	totalRequestReceived prometheus.Counter
+	requestDuration      prometheus.Gauge
+	totalResponsesSent   prometheus.Counter
+}
 type application struct {
 	config config
 	logger *jsonlog.Logger
 	models data.Models
 	mailer mailer.Mailer
 	wg     sync.WaitGroup
+	m      *metrics
 }
 
 var (
@@ -107,25 +113,13 @@ func main() {
 	logger.PrintInfo("database connection pool established", nil)
 
 	// Metrics
-	expvar.NewString("version").Set(version)
-
-	expvar.Publish("goroutines", expvar.Func(func() interface{} {
-		return runtime.NumGoroutine()
-	}))
-
-	expvar.Publish("database", expvar.Func(func() interface{} {
-		return db.Stats()
-	}))
-
-	expvar.Publish("timestamp", expvar.Func(func() interface{} {
-		return time.Now().Unix()
-	}))
 
 	app := &application{
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
 		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
+		m:      NewMetrics(),
 	}
 
 	err = app.serve()
@@ -136,6 +130,8 @@ func main() {
 
 func openDB(cfg config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.db.dsn)
+	fmt.Println("db_dsn :", cfg.db.dsn)
+	fmt.Println("err :", err)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +141,8 @@ func openDB(cfg config) (*sql.DB, error) {
 	db.SetMaxIdleConns(cfg.db.maxIdleConns)
 
 	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
+	fmt.Println("err time_duration:", err)
+
 	if err != nil {
 		return nil, err
 	}
@@ -152,10 +150,35 @@ func openDB(cfg config) (*sql.DB, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	err = db.PingContext(ctx)
+	fmt.Println("err ping_context:", err)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Println("open works fine")
 	return db, nil
+}
+
+func NewMetrics() *metrics {
+	m := &metrics{
+		totalRequestReceived: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "greenlight_total_request_received",
+			Help: "The total number of request received",
+		}),
+		requestDuration: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "greenlight_request_duration_seconds",
+			Help: "The duration of each request in seconds",
+		}),
+		totalResponsesSent: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "greenlight_total_responses_sent",
+			Help: "The total number of responses sent",
+		}),
+	}
+
+	prometheus.MustRegister(m.totalRequestReceived)
+	prometheus.MustRegister(m.requestDuration)
+	prometheus.MustRegister(m.totalResponsesSent)
+	return m
 }
