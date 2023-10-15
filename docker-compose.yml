@@ -3,7 +3,7 @@ services:
   db:
     image: postgres:latest
     ports:
-      - 5432:5432
+      - 4001:5432
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -46,7 +46,7 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
 
-  app:
+  greenlight_app:
     build: .
     ports:
       - "4000:4000"
@@ -54,7 +54,6 @@ services:
       db:
         condition: service_healthy
     command: ["./app", "-db-dsn=${GREENLIGHT_DB_DSN}"]
-
 volumes:
   postgres_data:
   prometheus_data:

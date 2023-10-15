@@ -20,10 +20,11 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'greenlight_app'
+  - job_name: greenlight_app
 
     # Override the global default and scrape targets from this job every 5 seconds.
     scrape_interval: 5s
 
     static_configs:
-      - targets: ['localhost:4000']
+      - targets:
+        - greenlight_app:4000

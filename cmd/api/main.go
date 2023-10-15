@@ -112,8 +112,6 @@ func main() {
 
 	logger.PrintInfo("database connection pool established", nil)
 
-	// Metrics
-
 	app := &application{
 		config: cfg,
 		logger: logger,
@@ -130,8 +128,6 @@ func main() {
 
 func openDB(cfg config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.db.dsn)
-	fmt.Println("db_dsn :", cfg.db.dsn)
-	fmt.Println("err :", err)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +137,6 @@ func openDB(cfg config) (*sql.DB, error) {
 	db.SetMaxIdleConns(cfg.db.maxIdleConns)
 
 	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
-	fmt.Println("err time_duration:", err)
 
 	if err != nil {
 		return nil, err
@@ -152,12 +147,9 @@ func openDB(cfg config) (*sql.DB, error) {
 	defer cancel()
 
 	err = db.PingContext(ctx)
-	fmt.Println("err ping_context:", err)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("open works fine")
 	return db, nil
 }
 
