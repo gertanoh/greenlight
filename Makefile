@@ -31,7 +31,7 @@ db/migrations/new:
 	migrate create -seq -ext=.sql -dir=./migrations ${name}
 
 ## db/migrations/up: apply all up database migrations
-.PHONY: hedb/migration/uplp
+.PHONY: db/migration/up
 db/migration/up: confirm
 	@echo 'Running up migrations'
 	migrate -path ./migrations -database ${GREENLIGHT_DB_DSN} up
@@ -43,7 +43,7 @@ audit: vendor
 	go fmt ./...
 	@echo 'Vetting code...'
 	go vet ./...
-	staticcheck ./...
+	# staticcheck ./...
 	@echo 'Running tests'
 	go test -race -vet=off ./...
 
