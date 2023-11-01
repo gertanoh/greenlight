@@ -4,6 +4,10 @@ FROM golang:1.20-alpine AS build
 # Set the working directory inside the container
 WORKDIR /app
 
+# Install CA certificates on Alpine Linux
+RUN apk --no-cache add ca-certificates
+
+
 COPY . .
 
 # Build the Golang app using the 'make' command (assuming 'build/api' target is defined in your Makefile)

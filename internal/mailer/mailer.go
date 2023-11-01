@@ -9,18 +9,9 @@ import (
 	"github.com/go-mail/mail/v2"
 )
 
-// Below we declare a new variable with the type embed.FS (embedded file system) to hold
-// our email templates. This has a comment directive in the format `//go:embed <path>`
-// IMMEDIATELY ABOVE it, which indicates to Go that we want to store the contents of the
-// ./templates directory in the templateFS embedded file system variable.
-// ↓↓↓
-//
 //go:embed "templates"
 var templateFS embed.FS
 
-// Define a Mailer struct which contains a mail.Dialer instance (used to connect to a
-// SMTP server) and the sender information for your emails (the name and address you
-// want the email to be from, such as "Alice Smith <alice@example.com>").
 type Mailer struct {
 	dialer *mail.Dialer
 	sender string
@@ -69,11 +60,6 @@ func (m Mailer) Send(recipient, templateFile string, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	// Use the mail.NewMessage() function to initialize a new mail.Message instance.
-	// Then we use the SetHeader() method to set the email recipient, sender and subject
-	// headers, the SetBody() method to set the plain-text body, and the AddAlternative()
-	// method to set the HTML body. It's important to note that AddAlternative() should
-	// always be called *after* SetBody().
 	msg := mail.NewMessage()
 	msg.SetHeader("To", recipient)
 	msg.SetHeader("From", m.sender)
