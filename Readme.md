@@ -40,3 +40,4 @@ Metrics are handled with prometheus and vizualisation is done with grafana
 ### TODO
 - [ ] Handle failing email sends due x509 certificate in docker
 - [ ] Load Testing
+- [ ] Use redis for rate limiter
