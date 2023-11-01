@@ -1,4 +1,4 @@
 .envrc
 bin/
-.env
+# .env
 app
