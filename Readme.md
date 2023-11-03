@@ -41,3 +41,4 @@ Metrics are handled with prometheus and vizualisation is done with grafana
 - [ ] Handle failing email sends due x509 certificate in docker
 - [ ] Load Testing
 - [ ] Use redis for rate limiter
+- [ ] Build front-end with HTMX
