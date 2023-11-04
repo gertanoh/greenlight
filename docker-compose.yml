@@ -60,16 +60,24 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
 
-  greenlight_app:
+  web:
     build: .
-    ports:
-      - "4000:4000"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     command: ["./app", "-db-dsn=${GREENLIGHT_APP_DB_DSN}", "-redis-dsn=${GREENLIGHT_APP_REDIS_DSN}"]
+    deploy:
+      replicas: 2
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    restart: always
+
 volumes:
   postgres_data:
   prometheus_data:

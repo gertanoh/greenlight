@@ -20,8 +20,8 @@ FROM scratch
 COPY --from=build /app/app .
 
 
-# Expose the port your Golang app listens on (replace 4000 with your app's port)
-EXPOSE 4000
+# Expose the port your Golang app listens on
+EXPOSE 80
 
 
 # Use the CMD instruction to set the flag directly and launch your Golang app

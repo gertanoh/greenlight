@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -76,7 +77,7 @@ func main() {
 
 	var cfg config
 
-	flag.IntVar(&cfg.port, "port", 4000, "API server port")
+	flag.IntVar(&cfg.port, "port", getPortFromEnv(), "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "PostgreSQL DSN")
 	flag.StringVar(&cfg.redis.dsn, "redis-dsn", "", "REDIS DSN")
@@ -119,14 +120,14 @@ func main() {
 	}
 
 	defer db.Close()
-
 	logger.PrintInfo("database connection pool established", nil)
-	logger.PrintInfo("redis dsn ", map[string]string{
-		"redis": cfg.redis.dsn})
+
+	logger.PrintInfo("redis dsn ", map[string]string{"redis": cfg.redis.dsn})
 	redis, err := setupRedis(cfg)
 	if err != nil {
 		logger.PrintFatal(err, nil)
 	}
+	defer redis.Close()
 	logger.PrintInfo("Redis connection established", nil)
 
 	app := &application{
@@ -200,4 +201,19 @@ func setupRedis(cfg config) (*redis.Client, error) {
 	}
 	redis := redis.NewClient(opts)
 	return redis, nil
+}
+
+func getPortFromEnv() int {
+	// Docker Compose will automatically set PORT for your service replicas.
+	portStr := os.Getenv("PORT")
+	if portStr != "" {
+		port, err := strconv.Atoi(portStr)
+		if err == nil {
+			return port
+		}
+	}
+
+	fmt.Println("warning: using default port value")
+	// Default port if not provided in environment variable
+	return 4000
 }

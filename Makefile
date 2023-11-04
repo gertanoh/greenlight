@@ -75,9 +75,13 @@ docker/build:
 
 .PHONY: docker/compose/up
 docker/compose/up:
-docker compose up -d
+	docker compose up -d
+
+.PHONY: docker/compose/up/rebuild
 docker/compose/up/rebuild:
+	docker compose down
 	docker compose up -d --build
+
 .PHONY: docker/compose/down
 docker/compose/down:
 	docker compose down
