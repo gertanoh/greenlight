@@ -2,6 +2,7 @@ package mailer
 
 import (
 	"bytes"
+	"crypto/tls"
 	"embed"
 	"text/template"
 	"time"
@@ -22,6 +23,7 @@ func New(host string, port int, username, password, sender string) Mailer {
 	// also configure this to use a 5-second timeout whenever we send an email.
 	dialer := mail.NewDialer(host, port, username, password)
 	dialer.Timeout = 5 * time.Second
+	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	// Return a Mailer instance containing the dialer and sender information.
 	return Mailer{
 		dialer: dialer,

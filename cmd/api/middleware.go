@@ -1,18 +1,21 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/henrtytanoh/greenlight/internal/data"
 	"github.com/henrtytanoh/greenlight/internal/validator"
 	"github.com/tomasen/realip"
-	"golang.org/x/time/rate"
+)
+
+const (
+	keyWithoutTTLVal = -1
 )
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
@@ -42,46 +45,36 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 
 func (app *application) rateLimit(next http.Handler) http.Handler {
 
-	type client struct {
-		limiter  *rate.Limiter
-		lastSeen time.Time
-	}
-
-	// concurrent map for storing clients and their rate limiter
-	var clients sync.Map
-
-	// go routine to reduce map size in runtime
-	go func() {
-		for {
-			time.Sleep(time.Minute)
-			// remove old clients from map
-			clients.Range(func(key, value interface{}) bool {
-				ip := key.(string)
-				client := value.(*client)
-				if time.Since(client.lastSeen) > 3*time.Minute {
-					clients.Delete(ip)
-				}
-				return true
-			})
-		}
-	}()
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		// Implement Fixed window strategy rate limiting with redis
+		// Functional, but does not handle bursty traffic and can result in 2* traffic at the frontier on the previous and current window
 		if app.config.limiter.enabled {
 			ip := realip.FromRequest(r)
+			key := "ratelimit:" + ip
 
-			_, ok := clients.Load(ip)
-			if !ok {
-				limiter := rate.NewLimiter(rate.Limit(app.config.limiter.rps), app.config.limiter.burst)
-				clients.Store(ip, &client{limiter: limiter, lastSeen: time.Now()})
+			// Using redis pipeline as we need to execute INCR and TTL. Note pipelines are not transactions, we still need to
+			// check for errors on both steps
+			ctx := context.Background()
+			requestsCount, err := app.redisClient.Incr(ctx, key).Result()
+			if err != nil {
+				app.serverErrorResponse(w, r, err)
+				return
+			}
+			// Set TTL if not present(i.e at the start of a window)
+			if ttl, err := app.redisClient.TTL(ctx, key).Result(); err != nil {
+				app.serverErrorResponse(w, r, err)
+				return
+			} else {
+				if ttl == keyWithoutTTLVal {
+					if err := app.redisClient.Expire(ctx, key, time.Duration(app.config.limiter.windowLength)*time.Second).Err(); err != nil {
+						app.serverErrorResponse(w, r, err)
+						return
+					}
+				}
 			}
 
-			value, _ := clients.Load(ip)
-			existingClient := value.(*client)
-			existingClient.lastSeen = time.Now()
-
-			if !existingClient.limiter.Allow() {
+			if requestsCount > int64(app.config.limiter.requestLimit) {
 				app.rateLimitExceededResponse(w, r)
 				return
 			}

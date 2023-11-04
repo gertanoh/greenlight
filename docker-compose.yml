@@ -16,7 +16,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
+  
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - 4002:6379
+    volumes:
+      - redis_data:/var/lib/redis/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      
   migrate:
     image: migrate/migrate
     volumes:
@@ -51,13 +64,15 @@ services:
     build: .
     ports:
       - "4000:4000"
-      - "2525:2525"
     depends_on:
       db:
         condition: service_healthy
-    command: ["./app", "-db-dsn=${GREENLIGHT_APP_DB_DSN}"]
+      redis:
+        condition: service_healthy
+    command: ["./app", "-db-dsn=${GREENLIGHT_APP_DB_DSN}", "-redis-dsn=${GREENLIGHT_APP_REDIS_DSN}"]
 volumes:
   postgres_data:
   prometheus_data:
   grafana-storage:
+  redis_data:
 
