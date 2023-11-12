@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+
+	"github.com/henrtytanoh/greenlight/render"
 )
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -14,8 +16,12 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 		},
 	}
 
-	err := app.writeJSON(w, http.StatusOK, env, nil)
+	buf, err := render.Template("healthcheck.tmpl", "healthcheck", env)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
+	}
+	_, err = buf.WriteTo(w)
+	if err != nil {
+		return
 	}
 }

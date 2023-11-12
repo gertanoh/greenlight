@@ -1,0 +1,67 @@
+{{define "healthcheck"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Health Check</title>
+    <!-- Add your CSS links here -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #444;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .status-display {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+        p {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="health-check">
+    <button hx-get="/v1/healthcheck" hx-trigger="click" hx-target="#status-display" hx-swap="innerHTML">Check System Health</button>
+    <div id="status-display">
+        <!-- The status and system info will be populated here -->
+        <p>Status: {{ .status }}</p>
+        <p>Environment: {{ (index .system_info "environment") }}</p>
+        <p>Version: {{ (index .system_info "version") }}</p>
+    </div>
+</div>
+
+<!-- Add HTMX script -->
+<script src="https://unpkg.com/htmx.org"></script>
+
+</body>
+</html>
+{{end}}

@@ -38,5 +38,4 @@ It can be useful for long standing applications.
 Metrics are handled with prometheus and vizualisation is done with grafana
 
 ### TODO
-- [ ] Setup TLS
 - [ ] Build front-end with HTMX
