@@ -4,6 +4,10 @@ FROM golang:1.20-alpine AS build
 # Set the working directory inside the container
 WORKDIR /app
 
+# Install CA certificates on Alpine Linux
+RUN apk --no-cache add ca-certificates
+
+
 COPY . .
 
 # Build the Golang app using the 'make' command (assuming 'build/api' target is defined in your Makefile)
@@ -16,8 +20,8 @@ FROM scratch
 COPY --from=build /app/app .
 
 
-# Expose the port your Golang app listens on (replace 4000 with your app's port)
-EXPOSE 4000
+# Expose the port your Golang app listens on
+EXPOSE 80
 
 
 # Use the CMD instruction to set the flag directly and launch your Golang app

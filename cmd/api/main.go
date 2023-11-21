@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/henrtytanoh/greenlight/internal/mailer"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/redis/go-redis/v9"
 )
 
 type config struct {
@@ -28,9 +30,9 @@ type config struct {
 	}
 
 	limiter struct {
-		rps     float64
-		burst   int
-		enabled bool
+		windowLength int
+		requestLimit int
+		enabled      bool
 	}
 
 	smtp struct {
@@ -44,6 +46,10 @@ type config struct {
 	cors struct {
 		trustedOrigins []string
 	}
+
+	redis struct {
+		dsn string
+	}
 }
 
 // prometheus metrics config
@@ -53,12 +59,13 @@ type metrics struct {
 	totalResponsesSent   prometheus.Counter
 }
 type application struct {
-	config config
-	logger *jsonlog.Logger
-	models data.Models
-	mailer mailer.Mailer
-	wg     sync.WaitGroup
-	m      *metrics
+	config      config
+	logger      *jsonlog.Logger
+	models      data.Models
+	mailer      mailer.Mailer
+	wg          sync.WaitGroup
+	m           *metrics
+	redisClient *redis.Client
 }
 
 var (
@@ -70,18 +77,19 @@ func main() {
 
 	var cfg config
 
-	flag.IntVar(&cfg.port, "port", 4000, "API server port")
+	flag.IntVar(&cfg.port, "port", getPortFromEnv(), "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "PostgreSQL DSN")
+	flag.StringVar(&cfg.redis.dsn, "redis-dsn", "", "REDIS DSN")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
 
-	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
-	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
+	flag.IntVar(&cfg.limiter.windowLength, "window-length", 1, "Length of window")
+	flag.IntVar(&cfg.limiter.requestLimit, "request-limit", 10, "Maxmium request per window length")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
 
-	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
 	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP port")
 	flag.StringVar(&cfg.smtp.username, "smtp-username", "b08f06550b8060", "SMTP username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", "f6e834f9eb7b99", "SMTP password")
@@ -103,21 +111,32 @@ func main() {
 
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
+	logger.PrintInfo("db dsn ", map[string]string{
+		"db": cfg.db.dsn,
+	})
 	db, err := openDB(cfg)
 	if err != nil {
 		logger.PrintFatal(err, nil)
 	}
 
 	defer db.Close()
-
 	logger.PrintInfo("database connection pool established", nil)
 
+	logger.PrintInfo("redis dsn ", map[string]string{"redis": cfg.redis.dsn})
+	redis, err := setupRedis(cfg)
+	if err != nil {
+		logger.PrintFatal(err, nil)
+	}
+	defer redis.Close()
+	logger.PrintInfo("Redis connection established", nil)
+
 	app := &application{
-		config: cfg,
-		logger: logger,
-		models: data.NewModels(db),
-		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
-		m:      NewMetrics(),
+		config:      cfg,
+		logger:      logger,
+		models:      data.NewModels(db),
+		mailer:      mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
+		m:           NewMetrics(),
+		redisClient: redis,
 	}
 
 	err = app.serve()
@@ -173,4 +192,28 @@ func NewMetrics() *metrics {
 	prometheus.MustRegister(m.requestDuration)
 	prometheus.MustRegister(m.totalResponsesSent)
 	return m
+}
+
+func setupRedis(cfg config) (*redis.Client, error) {
+	opts, err := redis.ParseURL(cfg.redis.dsn)
+	if err != nil {
+		return nil, err
+	}
+	redis := redis.NewClient(opts)
+	return redis, nil
+}
+
+func getPortFromEnv() int {
+	// Docker Compose will automatically set PORT for your service replicas.
+	portStr := os.Getenv("PORT")
+	if portStr != "" {
+		port, err := strconv.Atoi(portStr)
+		if err == nil {
+			return port
+		}
+	}
+
+	fmt.Println("warning: using default port value")
+	// Default port if not provided in environment variable
+	return 4000
 }

@@ -77,6 +77,12 @@ docker/build:
 docker/compose/up:
 	docker compose up -d
 
+.PHONY: docker/compose/up/rebuild
+docker/compose/rebuild:
+	docker compose down
+	docker compose up -d --build
+
 .PHONY: docker/compose/down
 docker/compose/down:
 	docker compose down
+	docker volume rm greenlight_postgres_data
