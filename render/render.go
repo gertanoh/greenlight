@@ -3,7 +3,6 @@ package render
 import (
 	"bytes"
 	"embed"
-	"fmt"
 	"html/template"
 )
 
@@ -27,13 +26,6 @@ func Template(templateFile string, templateName string, data interface{}) (*byte
 	if err != nil {
 		return nil, err
 	}
-
-	// fmt.Println(buf.String())
-	_, err = buf.WriteTo(w)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(buf.String())
 
 	return buf, nil
 }
