@@ -37,5 +37,8 @@ An alternative is to use vendor to keep all the sources of in a vendor folder.
 It can be useful for long standing applications.
 Metrics are handled with prometheus and vizualisation is done with grafana
 
-### TODO
-- [ ] Build front-end with HTMX
+### How to run
+The application is deployed using docker containers and docker compose.
+Use .env.template to create your .env file with your credentials
+then install docker on your machine.
+use make docker/compose/up/rebuild to launch the app

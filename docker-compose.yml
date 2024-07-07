@@ -1,4 +1,3 @@
-version: '3'
 services:
   db:
     image: postgres:latest
@@ -71,7 +70,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: ["./app", "-db-dsn=${GREENLIGHT_APP_DB_DSN}", "-redis-dsn=${GREENLIGHT_APP_REDIS_DSN}"]
+    command: ["./app"]
     deploy:
       replicas: 2
   nginx:
