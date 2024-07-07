@@ -57,6 +57,8 @@ type metrics struct {
 	totalRequestReceived prometheus.Counter
 	requestDuration      prometheus.Gauge
 	totalResponsesSent   prometheus.Counter
+	totalInternalServer  prometheus.Counter
+	totalClientSideError prometheus.Counter
 }
 type application struct {
 	config      config
@@ -91,8 +93,8 @@ func main() {
 
 	flag.StringVar(&cfg.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
 	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP port")
-	flag.StringVar(&cfg.smtp.username, "smtp-username", "b08f06550b8060", "SMTP username")
-	flag.StringVar(&cfg.smtp.password, "smtp-password", "f6e834f9eb7b99", "SMTP password")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "53aecc97c7ecf7", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "ca08463ee04bcd", "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <no-reply@greenlight.henrygtanoh.net>", "SMTP sender")
 
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
@@ -186,11 +188,21 @@ func NewMetrics() *metrics {
 			Name: "greenlight_total_responses_sent",
 			Help: "The total number of responses sent",
 		}),
+		totalInternalServer: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "greenlight_total_internal_server_error",
+			Help: "The total number of internal server error",
+		}),
+		totalClientSideError: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "greenlight_total_client_side_error",
+			Help: "The total number of client side error",
+		}),
 	}
 
 	prometheus.MustRegister(m.totalRequestReceived)
 	prometheus.MustRegister(m.requestDuration)
 	prometheus.MustRegister(m.totalResponsesSent)
+	prometheus.MustRegister(m.totalInternalServer)
+	prometheus.MustRegister(m.totalClientSideError)
 	return m
 }
 

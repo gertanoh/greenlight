@@ -211,6 +211,13 @@ func (app *application) metrics(next http.Handler) http.Handler {
 		metrics := httpsnoop.CaptureMetrics(next, w, r)
 
 		app.m.totalResponsesSent.Inc()
+		// check 500 status code
+		if metrics.Code == http.StatusInternalServerError {
+			app.m.totalInternalServer.Inc()
+		}
+		if metrics.Code >= http.StatusBadRequest && metrics.Code < http.StatusInternalServerError {
+			app.m.totalClientSideError.Inc()
+		}
 		app.m.requestDuration.Set(metrics.Duration.Seconds())
 	})
 }

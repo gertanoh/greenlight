@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"embed"
+	"fmt"
 	"text/template"
 	"time"
 
@@ -72,9 +73,17 @@ func (m Mailer) Send(recipient, templateFile string, data interface{}) error {
 	// opens a connection to the SMTP server, sends the message, then closes the
 	// connection. If there is a timeout, it will return a "dial tcp: i/o timeout"
 	// error.
-	err = m.dialer.DialAndSend(msg)
-	if err != nil {
-		return err
+
+	// using retry
+
+	for i := 0; i < 3; i++ {
+		err = m.dialer.DialAndSend(msg)
+		if err == nil {
+			fmt.Println("err : ", err)
+			return err
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
-	return nil
+
+	return err
 }
