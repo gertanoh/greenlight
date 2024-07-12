@@ -75,7 +75,7 @@ func (m Mailer) Send(recipient, templateFile string, data interface{}) error {
 	// error.
 
 	// using retry
-
+	fmt.Println("Sending user registration email")
 	for i := 0; i < 3; i++ {
 		err = m.dialer.DialAndSend(msg)
 		if err == nil {

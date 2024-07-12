@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -182,21 +183,19 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 
 		origin := r.Header.Get("Origin")
 
-		if origin != "" && len(app.config.cors.trustedOrigins) != 0 {
-			for i := range app.config.cors.trustedOrigins {
-				if origin == app.config.cors.trustedOrigins[i] {
-					w.Header().Set("Access-Control-Allow-Origin", origin)
+		if len(app.config.cors.trustedOrigins) != 0 {
+			if slices.Contains(app.config.cors.trustedOrigins, origin) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
 
-					// check if the request has the HTTP method OPTIONS and contains the
-					// Access-Control-Request-Headers header
-					if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Headers") != "" {
-						// Set the appropriate headers to allow the browser to make requests
-						w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE")
-						w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+				// check if the request has the HTTP method OPTIONS and contains the
+				// Access-Control-Request-Headers header
+				if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Headers") != "" {
+					// Set the appropriate headers to allow the browser to make requests
+					w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE")
+					w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 
-						w.WriteHeader(http.StatusOK)
-						return
-					}
+					w.WriteHeader(http.StatusOK)
+					return
 				}
 			}
 		}

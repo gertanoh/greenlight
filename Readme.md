@@ -41,4 +41,6 @@ Metrics are handled with prometheus and vizualisation is done with grafana
 The application is deployed using docker containers and docker compose.
 Use .env.template to create your .env file with your credentials
 then install docker on your machine.
-use make docker/compose/up/rebuild to launch the app
+use 
+
+make docker/compose/up/rebuild to launch the app

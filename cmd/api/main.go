@@ -14,7 +14,6 @@ import (
 	"github.com/henrtytanoh/greenlight/internal/data"
 	jsonlog "github.com/henrtytanoh/greenlight/internal/jsonLog"
 	"github.com/henrtytanoh/greenlight/internal/mailer"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
@@ -110,28 +109,6 @@ func main() {
 		fmt.Printf("Version:\t%s\n", version)
 		fmt.Printf("Build time:\t%s\n", buildTime)
 		os.Exit(0)
-	}
-
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println("Error loading .env file")
-		os.Exit(1)
-	}
-
-	if cfg.db.dsn == "" {
-		cfg.db.dsn = os.Getenv("GREENLIGHT_APP_DB_DSN")
-	}
-	if cfg.redis.dsn == "" {
-		cfg.redis.dsn = os.Getenv("GREENLIGHT_APP_REDIS_DSN")
-	}
-	if cfg.smtp.host == "" {
-		cfg.smtp.host = os.Getenv("STMP_HOST")
-	}
-	if cfg.smtp.username == "" {
-		cfg.smtp.username = os.Getenv("STMP_USERNAME")
-	}
-	if cfg.smtp.password == "" {
-		cfg.smtp.password = os.Getenv("STMP_PASSWORD")
 	}
 
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
