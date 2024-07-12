@@ -20,7 +20,6 @@ RUN make build/api
 # Copy the binary from the builder stage to the final stage
 FROM scratch
 COPY --from=build /app/app .
-COPY --from=build /app/.env .
 
 
 # Expose the port your Golang app listens on
