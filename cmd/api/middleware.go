@@ -100,6 +100,9 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 
 		headersParts := strings.Split(authorizationHeader, " ")
 		if len(headersParts) != 2 || headersParts[0] != "Bearer" {
+			app.logger.PrintError(fmt.Errorf("auth header is not correctly formed"), map[string]string{
+				"header": authorizationHeader,
+			})
 			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
@@ -109,6 +112,7 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		v := validator.New()
 
 		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+			app.logger.PrintError(fmt.Errorf("invalid token %s", token), nil)
 			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
@@ -117,13 +121,13 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		if err != nil {
 			switch {
 			case errors.Is(err, data.ErrRecordNotFound):
+
 				app.invalidAuthenticationTokenResponse(w, r)
 			default:
 				app.serverErrorResponse(w, r, err)
 			}
 			return
 		}
-
 		r = app.contextSetUser(r, user)
 		next.ServeHTTP(w, r)
 	})
