@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "greenlight.fullname" . }}-migrate
+  labels:
+    {{- include "greenlight.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install, pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    spec:
+      containers:
+      - name: migrate
+        image: migrate/migrate:latest
+        imagePullPolicy: IfNotPresent
+        command: ['/migrate']
+        args: ['-path', '/migrations', '-database', 'postgres://postgres:greenlight@greenlight-db-postgresql:5432/greenlight?sslmode=disable', 'up']
+        # args: ['-help']
+        volumeMounts:
+        - name: migrations
+          mountPath: /migrations
+        tty: true
+        stdin: true
+      restartPolicy: OnFailure
+      volumes:
+      - name: migrations
+        hostPath:
+          path: /home/dev-station/greenlight/migrations
+  backoffLimit: 4

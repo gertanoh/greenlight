@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "greenlight.fullname" . }}
+  labels:
+    {{- include "greenlight.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "greenlight.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "greenlight.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets }}
+                  key: POSTGRES_PASSWORD
+            - name: STMP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets }}
+                  key: STMP_USERNAME
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets }}
+                  key: STMP_USERNAME
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.config }}
+                  key: POSTGRES_DB
+            - name: SMTP_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.config }}
+                  key: SMTP_HOST
+            - name: GREENLIGHT_APP_DB_DSN
+              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@{{ .Values.database.service_name }}:5432/$(POSTGRES_DB)?sslmode=disable
+            - name: GREENLIGHT_APP_REDIS_DSN
+              value: redis://{{ .Values.redis.service_name }}:6379
+          args:
+            - "./app"
+            - "--port={{ .Values.service.port }}"
+            - "-db-dsn=$(GREENLIGHT_APP_DB_DSN)"
+            - "-redis-dsn=$(GREENLIGHT_APP_REDIS_DSN)"
+            - "-smtp-host=$(SMTP_HOST)"
+            - "-smtp-username=$(SMTP_USERNAME)"
+            - "-smtp-password=$(SMTP_PASSWORD)"

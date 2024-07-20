@@ -1,0 +1,35 @@
+# Default values for greenlight.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 2
+
+image:
+  repository: greenlight-app
+  pullPolicy: Never
+  tag: latest
+
+database:
+  service_name: greenlight-db-postgresql
+redis:
+  service_name: greenlight-redis-master
+
+secrets: apps-credentials
+config: greenlight-config
+service:
+  type: LoadBalancer
+  port: 8080
+  nodePort: 30138
+
+
+livenessProbe:
+  httpGet:
+    path: /v1/healthcheck
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 60
+readinessProbe:
+  httpGet:
+    path: /v1/healthcheck
+    port: http
+

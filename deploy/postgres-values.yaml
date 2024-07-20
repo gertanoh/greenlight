@@ -1,0 +1,12 @@
+global:
+  postgresql:
+    auth:
+      username: ""
+      password: ""
+      database: ""
+primary:
+  service:
+    port: 5432
+  persistence:
+    enabled: true
+    size: 1Gi
