@@ -210,6 +210,10 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 func (app *application) metrics(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		app.logger.PrintInfo("Incoming request", map[string]string{
+			"method": r.Method,
+			"path":   r.URL.Path,
+		})
 		app.m.totalRequestReceived.Inc()
 		metrics := httpsnoop.CaptureMetrics(next, w, r)
 
@@ -222,5 +226,10 @@ func (app *application) metrics(next http.Handler) http.Handler {
 			app.m.totalClientSideError.Inc()
 		}
 		app.m.requestDuration.Set(metrics.Duration.Seconds())
+		app.logger.PrintInfo("Request done", map[string]string{
+			"method":   r.Method,
+			"path":     r.URL.Path,
+			"duration": metrics.Duration.String(),
+		})
 	})
 }

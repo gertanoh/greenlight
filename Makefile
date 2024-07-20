@@ -63,7 +63,7 @@ linker_flags = '-s -X main.buildTime=${current_time}  -X main.version=${git_desc
 .PHONY: build/api
 build/api:
 	@echo 'Building cmd/api'
-	go build -ldflags=${linker_flags} -o=./app ./cmd/api
+	CGO_ENABLED=0 go build -ldflags=${linker_flags} -o=./app ./cmd/api
 
 ################### Docker ######################
 .PHONY: docker/build

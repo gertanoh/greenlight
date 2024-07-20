@@ -88,7 +88,7 @@ func main() {
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
 
 	flag.IntVar(&cfg.limiter.windowLength, "window-length", 1, "Length of window")
-	flag.IntVar(&cfg.limiter.requestLimit, "request-limit", 10, "Maxmium request per window length")
+	flag.IntVar(&cfg.limiter.requestLimit, "request-limit", 100, "Maxmium request per window length")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
 
 	flag.StringVar(&cfg.smtp.host, "smtp-host", "", "SMTP host")
