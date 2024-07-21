@@ -6,25 +6,17 @@ metadata:
     {{- include "greenlight.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install, pre-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-weight": "10"
 spec:
   template:
     spec:
       containers:
-      - name: migrate
-        image: migrate/migrate:latest
-        imagePullPolicy: IfNotPresent
-        command: ['/migrate']
+      - name: {{ .Values.migrations.name }}
+        image: {{ .Values.migrations.repository }}:{{ .Values.migrations.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+        command: ['migrate']
         args: ['-path', '/migrations', '-database', 'postgres://postgres:greenlight@greenlight-db-postgresql:5432/greenlight?sslmode=disable', 'up']
-        # args: ['-help']
-        volumeMounts:
-        - name: migrations
-          mountPath: /migrations
-        tty: true
-        stdin: true
-      restartPolicy: OnFailure
-      volumes:
-      - name: migrations
-        hostPath:
-          path: /home/dev-station/greenlight/migrations
+      restartPolicy: Never
   backoffLimit: 4

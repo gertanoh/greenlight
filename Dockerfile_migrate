@@ -1,0 +1,9 @@
+# Use the migrate/migrate image as the base
+FROM migrate/migrate:latest
+
+# Copy migration files into the image
+COPY ./migrations /migrations
+
+
+# Set the entrypoint to the shell script
+ENTRYPOINT ["migrate"]

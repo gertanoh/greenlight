@@ -39,32 +39,32 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets }}
+                  name: {{ include "greenlight.fullname" . }}-secrets
                   key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets }}
+                  name: {{ include "greenlight.fullname" . }}-secrets
                   key: POSTGRES_PASSWORD
-            - name: STMP_USERNAME
+            - name: SMTP_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets }}
-                  key: STMP_USERNAME
+                  name: {{ include "greenlight.fullname" . }}-secrets
+                  key: SMTP_USERNAME
             - name: SMTP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets }}
-                  key: STMP_USERNAME
+                  name: {{ include "greenlight.fullname" . }}-secrets
+                  key: SMTP_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 configMapKeyRef:
-                  name: {{ .Values.config }}
+                  name: {{ include "greenlight.fullname" . }}-config
                   key: POSTGRES_DB
             - name: SMTP_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: {{ .Values.config }}
+                  name: {{ include "greenlight.fullname" . }}-config
                   key: SMTP_HOST
             - name: GREENLIGHT_APP_DB_DSN
               value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@{{ .Values.database.service_name }}:5432/$(POSTGRES_DB)?sslmode=disable

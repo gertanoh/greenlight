@@ -44,3 +44,15 @@ then install docker on your machine.
 use 
 
 make docker/compose/up/rebuild to launch the app
+
+
+### User Flow
+1. Register by hitting /v1/users with {"name": "Bob Jones", "email": "bob@example.com", "password": "pa55word"}
+2. Using the token recieved by email to confirm your registration v1/users/activated
+3. Get your token for others API call by hitting /v1/tokens/authentication with {"email": "bob@example.com", "password": "pa55word"}
+
+### Deploying with kubernetes
+1. setup a local env with either kind or activate k8 in docker desktop
+2. create .env with your environment variables
+3. run the helm_install_postgres.sh to set postgres and redis
+4. deploy using helm install 

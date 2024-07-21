@@ -70,6 +70,7 @@ build/api:
 docker/build:
 	@echo 'Building Docker image for cmd/api'
 	docker build -t greenlight-app -f Dockerfile .
+	docker build -t greenlight-app-migrate -f Dockerfile_migrate .
 
 .PHONY: docker/compose/up
 docker/compose/up:

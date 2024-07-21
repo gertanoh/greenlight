@@ -6,20 +6,23 @@ replicaCount: 2
 
 image:
   repository: greenlight-app
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
   tag: latest
 
+migrations:
+  name: greenlight-app-migrations
+  repository: greenlight-app-migrate
+  pullPolicy: IfNotPresent
+  tag: latest
 database:
   service_name: greenlight-db-postgresql
 redis:
   service_name: greenlight-redis-master
 
-secrets: apps-credentials
-config: greenlight-config
 service:
   type: LoadBalancer
   port: 8080
-  nodePort: 30138
+  nodePort: 30140
 
 
 livenessProbe:
@@ -33,3 +36,14 @@ readinessProbe:
     path: /v1/healthcheck
     port: http
 
+
+config:
+  postgresDb: "greenlight"
+  smtpHost: "sandbox.smtp.mailtrap.io"
+  greenlightAppRedisDsn: "redis://redis:6379"
+
+secrets:
+  postgresUser: "postgres"
+  postgresPassword: "greenlight"
+  smtpUsername: "53aecc97c7ecf7"
+  smtpPassword: "ca08463ee04bcd"
