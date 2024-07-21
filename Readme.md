@@ -55,4 +55,5 @@ make docker/compose/up/rebuild to launch the app
 1. setup a local env with either kind or activate k8 in docker desktop
 2. create .env with your environment variables
 3. run the helm_install_postgres.sh to set postgres and redis
-4. deploy using helm install 
+4. deploy using helm install by specifying your values file 
+helm install my_release greenlight -f my_values_file.yaml
